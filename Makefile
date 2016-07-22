@@ -1,9 +1,9 @@
 CC = clang
 CXX = clang++
-INCLUDES = -I./lib/include/ $(shell pkg-config --cflags glfw3)
+INCLUDES = -I./lib/include/ $(shell pkg-config --cflags glfw3 pangocairo)
 CFLAGS = $(INCLUDES) -std=c11
 CXXFLAGS = $(INCLUDES) -std=c++14
-LDFLAGS = $(shell pkg-config --libs --static glfw3)
+LDFLAGS = $(shell pkg-config --libs --static glfw3 pangocairo)
 GLAD = lib/src/glad.c lib/include/glad/glad.h lib/include/KHR/khrplatform.h
 
 all: build/goat-editor

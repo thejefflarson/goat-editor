@@ -5,6 +5,7 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <pango/pangocairo.h>
 
 static const char *vertex_shader =
 "                               \
@@ -97,6 +98,16 @@ int main() {
   while(!glfwWindowShouldClose(window)) {
     int w, h;
     glfwGetFramebufferSize(window, &w, &h);
+
+    cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
+                                                          w, h);
+    cairo_t *ctx = cairo_create(surface);
+    PangoLayout *layout = pango_cairo_create_layout(ctx);
+    cairo_set_source_rgb(ctx, 1.0, 1.0, 1.0);
+    pango_layout_set_text(layout, (char *)text->c_str(), text->length());
+    pango_cairo_show_layout(ctx, layout);
+    g_object_unref(layout);
+    cairo_surface_destroy(surface);
     glViewport(0, 0, w, h);
     glClear(GL_COLOR_BUFFER_BIT);
     glfwSwapBuffers(window);
