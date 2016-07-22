@@ -35,11 +35,34 @@ static const uint8_t triangles[2][3] {
   {2, 1, 3}
 };
 
+static void delete_char(GLFWwindow* window, ssize_t offset, size_t num) {
+  void *data = glfwGetWindowUserPointer(window);
+  auto text = *static_cast<std::shared_ptr<std::wstring> *>(data);
+  if(offset < 0) {
+    offset = text->length() + offset;
+    if(offset < 0) { return; }
+  }
+  text->erase(offset, num);
+  std::wcout << *text << std::endl;
+}
+
 static void add_char(GLFWwindow* window, unsigned int codepoint) {
   void *data = glfwGetWindowUserPointer(window);
   auto text = *static_cast<std::shared_ptr<std::wstring> *>(data);
   text->push_back(codepoint);
   std::wcout << *text << std::endl;
+}
+
+static void control_key(GLFWwindow* window, int key,
+                        int scancode, int action, int mods) {
+  switch(key) {
+  case GLFW_KEY_BACKSPACE:
+    delete_char(window, -1, 1);
+    break;
+  case GLFW_KEY_ENTER:
+    add_char(window, '\n');
+    break;
+  }
 }
 
 static void log_error(const int error, const char* description) {
@@ -60,6 +83,7 @@ int main() {
 
   glfwSetWindowUserPointer(window, static_cast<void *>(&text));
   glfwSetCharCallback(window, add_char);
+  glfwSetKeyCallback(window, control_key);
 
   glfwMakeContextCurrent(window);
   if(!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
