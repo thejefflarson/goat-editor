@@ -1,6 +1,7 @@
 #include <iostream>
+#include <string>
 
-#include <inttypes.h>
+#include <stddef.h>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -22,23 +23,31 @@ void main() {                               \
   gl_FragColor = texture2D(text, coord.xy); \
 }";
 
-static const float32_t points[4][3] = {
+static const float points[4][3] = {
   {-1.0, -1.0, 0.0},
   { 1.0, -1.0, 0.0},
   {-1.0,  1.0, 0.0},
   { 1.0,  1.0, 0.0}
 };
 
-static const uint8_t triangles[3][2] {
+static const uint8_t triangles[2][3] {
   {0, 1, 2},
   {2, 1, 3}
 };
 
+static void add_char(GLFWwindow* window, unsigned int codepoint) {
+  void *data = glfwGetWindowUserPointer(window);
+  auto text = *static_cast<std::shared_ptr<std::wstring> *>(data);
+  text->push_back(codepoint);
+  std::wcout << *text << std::endl;
+}
+
 static void log_error(const int error, const char* description) {
-  std::cerr << "Error:" << description;
+  std::cerr << "Error:" << description << std::endl;
 }
 
 int main() {
+  auto text = std::make_shared<std::wstring>();
   GLFWwindow* window;
   glfwSetErrorCallback(log_error);
   if(!glfwInit()) { exit(EXIT_FAILURE); }
@@ -48,6 +57,9 @@ int main() {
     glfwTerminate();
     return EXIT_FAILURE;
   }
+
+  glfwSetWindowUserPointer(window, static_cast<void *>(&text));
+  glfwSetCharCallback(window, add_char);
 
   glfwMakeContextCurrent(window);
   if(!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
