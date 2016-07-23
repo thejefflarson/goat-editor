@@ -104,7 +104,7 @@ int main() {
     cairo_t *ctx = cairo_create(surface);
     PangoLayout *layout = pango_cairo_create_layout(ctx);
     cairo_set_source_rgb(ctx, 1.0, 1.0, 1.0);
-    pango_layout_set_text(layout, (char *)text->c_str(), text->length());
+    pango_layout_set_text(layout, (char *)text->c_str(), text->size());
     pango_cairo_show_layout(ctx, layout);
     g_object_unref(layout);
     cairo_surface_destroy(surface);
