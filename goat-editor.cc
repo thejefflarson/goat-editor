@@ -3,7 +3,6 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-
 static void log_error(int error, const char* description) {
   std::cerr << "Error:" << description;
 }
@@ -26,7 +25,6 @@ int main() {
     glfwTerminate();
     return EXIT_FAILURE;
   }
-  glfwSwapInterval(1);
 
   while(!glfwWindowShouldClose(window)) {
     int w, h;
