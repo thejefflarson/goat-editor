@@ -11,10 +11,9 @@ static const GLchar *vertex =
 "                                    \
 #version 150 core                    \
 in vec2 pos;                         \
-in vec2 textcoord;                   \
 out vec2 coord;                      \
 void main(){                         \
-  coord = textcoord;                 \
+  coord = pos;                       \
   gl_Position = vec4(pos, 0.0, 1.0); \
 }";
 
@@ -29,10 +28,10 @@ void main() {                   \
 }";
 
 static const GLfloat vertices[] = {
-  -0.5f,  0.5f, 0.0f, 0.0f,
-   0.5f,  0.5f, 1.0f, 0.0f,
-   0.5f, -0.5f, 1.0f, 1.0f,
-  -0.5f, -0.5f, 0.0f, 1.0f
+  -0.5f,  0.5f,
+   0.5f,  0.5f,
+   0.5f, -0.5f,
+  -0.5f, -0.5f
 };
 
 static const GLuint triangles[] = {
@@ -140,36 +139,38 @@ int main() {
 
   GLint pos = glGetAttribLocation(program, "pos");
   glEnableVertexAttribArray(pos);
-  glVertexAttribPointer(pos, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), 0);
-
-  GLint coord = glGetAttribLocation(program, "textcoord");
-  glEnableVertexAttribArray(coord);
-  glVertexAttribPointer(coord, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat),
-                        (void*)(2 * sizeof(GLfloat)));
+  glVertexAttribPointer(pos, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
   GLuint tex = glGetUniformLocation(program, "text");
   glGenTextures(1, &tex);
   glBindTexture(GL_TEXTURE_2D, tex);
-
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   while(!glfwWindowShouldClose(window)) {
     int w, h;
     // TODO: we should only alloc this on resize
     glfwGetFramebufferSize(window, &w, &h);
 
     uint8_t *data = (uint8_t *)calloc(w * h * 4, sizeof(uint8_t));
+
     cairo_surface_t *surface = cairo_image_surface_create_for_data(
       data, CAIRO_FORMAT_ARGB32, w, h, w * 4
     );
 
     cairo_t *ctx = cairo_create(surface);
-    cairo_set_source_rgb(ctx, 1.0, 1.0, 1.0);
-    cairo_paint(ctx);
-    cairo_set_source_rgb (ctx, 0, 0, 0);
+    cairo_set_source_rgba(ctx, 0.0, 0.0, 0.0, 1.0);
     PangoLayout *layout = pango_cairo_create_layout(ctx);
     pango_layout_set_text(layout, (char *)text->data(), text->size());
     pango_cairo_update_layout (ctx, layout);
     pango_cairo_show_layout(ctx, layout);
     g_object_unref(layout);
+    cairo_surface_flush(surface);
+    cairo_surface_destroy(surface);
+    cairo_destroy(ctx);
 
     glViewport(0, 0, w, h);
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -180,8 +181,7 @@ int main() {
                   0, GL_BGRA, GL_UNSIGNED_BYTE, data);
 
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-    cairo_surface_destroy(surface);
-    cairo_destroy(ctx);
+
     glfwSwapBuffers(window);
     glfwPollEvents();
     free(data);
