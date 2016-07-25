@@ -7,33 +7,37 @@
 #include <GLFW/glfw3.h>
 #include <pango/pangocairo.h>
 
-static const char *vertex =
-"                               \
-attribute vec2 pos;             \
-varying vec2 coord;             \
-void main(){                    \
-  coord = pos;               \
+static const GLchar *vertex =
+"                                    \
+#version 150 core                    \
+in vec2 pos;                         \
+in vec2 textcoord;                   \
+out vec2 coord;                      \
+void main(){                         \
+  coord = textcoord;                 \
   gl_Position = vec4(pos, 0.0, 1.0); \
 }";
 
-static const char *fragment =
-"                                           \
-uniform sampler2D text;                     \
-varying vec2 coord;                         \
-void main() {                               \
-  gl_FragColor = vec4(1.);texture2D(text, coord); \
+static const GLchar *fragment =
+"                               \
+#version 150 core               \
+uniform sampler2D text;         \
+in vec2 coord;                  \
+out vec4 color;                 \
+void main() {                   \
+  color = texture(text, coord); \
 }";
 
-static const float vertices[] = {
-  -1.0, -1.0,
-   1.0, -1.0,
-  -1.0,  1.0,
-   1.0,  1.0
+static const GLfloat vertices[] = {
+  -0.5f,  0.5f, 0.0f, 0.0f,
+   0.5f,  0.5f, 1.0f, 0.0f,
+   0.5f, -0.5f, 1.0f, 1.0f,
+  -0.5f, -0.5f, 0.0f, 1.0f
 };
 
-static const uint8_t triangles[] {
+static const GLuint triangles[] = {
   0, 1, 2,
-  2, 1, 3
+  2, 3, 0
 };
 
 static void delete_char(GLFWwindow* window, ssize_t offset, size_t num) {
@@ -80,6 +84,11 @@ int main() {
   glfwSetErrorCallback(log_error);
   if(!glfwInit()) { exit(EXIT_FAILURE); }
 
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+
   window = glfwCreateWindow(640, 480, "Goat Editor", NULL, NULL);
   if(!window) {
     glfwTerminate();
@@ -99,14 +108,18 @@ int main() {
   }
 
   // TODO: add error checks for this junk
+  GLuint vao;
+  glGenVertexArrays(1, &vao);
+  glBindVertexArray(vao);
+
   GLuint vertex_buffer;
   glGenBuffers(1, &vertex_buffer);
   glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-  GLuint triangles_buffer;
-  glGenBuffers(1, &triangles_buffer);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, triangles_buffer);
+  GLuint element_buffer;
+  glGenBuffers(1, &element_buffer);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, element_buffer);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(triangles), triangles,
                GL_STATIC_DRAW);
 
@@ -121,20 +134,28 @@ int main() {
   GLuint program = glCreateProgram();
   glAttachShader(program, vertex_shader);
   glAttachShader(program, fragment_shader);
+  glBindFragDataLocation(program, 0, "color");
   glLinkProgram(program);
-
-  GLuint text_id = glGetUniformLocation(program, "text");
-  glGenTextures (1, &text_id);
+  glUseProgram(program);
 
   GLint pos = glGetAttribLocation(program, "pos");
   glEnableVertexAttribArray(pos);
-  glVertexAttribPointer(pos, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, NULL);
-  glEnableVertexAttribArray(pos);
+  glVertexAttribPointer(pos, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), 0);
+
+  GLint coord = glGetAttribLocation(program, "textcoord");
+  glEnableVertexAttribArray(coord);
+  glVertexAttribPointer(coord, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat),
+                        (void*)(2 * sizeof(GLfloat)));
+
+  GLuint tex = glGetUniformLocation(program, "text");
+  glGenTextures(1, &tex);
+  glBindTexture(GL_TEXTURE_2D, tex);
 
   while(!glfwWindowShouldClose(window)) {
     int w, h;
     // TODO: we should only alloc this on resize
     glfwGetFramebufferSize(window, &w, &h);
+
     uint8_t *data = (uint8_t *)calloc(w * h * 4, sizeof(uint8_t));
     cairo_surface_t *surface = cairo_image_surface_create_for_data(
       data, CAIRO_FORMAT_ARGB32, w, h, w * 4
@@ -149,35 +170,30 @@ int main() {
     pango_cairo_update_layout (ctx, layout);
     pango_cairo_show_layout(ctx, layout);
     g_object_unref(layout);
-    cairo_destroy(ctx);
-    cairo_surface_write_to_png(surface, "out.png");
-    cairo_surface_destroy(surface);
 
     glViewport(0, 0, w, h);
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
-    glUseProgram(program);
 
-    glBindTexture(GL_TEXTURE_RECTANGLE_ARB, text_id);
-    glTexImage2D(GL_TEXTURE_RECTANGLE_ARB,
+    glTexImage2D(GL_TEXTURE_2D,
                   0, GL_RGBA, w, h,
-                  0, GL_BGRA, GL_UNSIGNED_BYTE,	data);
+                  0, GL_BGRA, GL_UNSIGNED_BYTE, data);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, triangles_buffer);
-    glPointSize(10.);
-    glDrawElements(GL_POINTS, 6, GL_UNSIGNED_SHORT, NULL);
-
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    cairo_surface_destroy(surface);
+    cairo_destroy(ctx);
     glfwSwapBuffers(window);
     glfwPollEvents();
     free(data);
   }
 
-  // todo clean up
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  glDisableVertexAttribArray(pos);
-  //glDeleteBuffers(1, &pos);
-  //glDeleteBuffers(1, &)
+  glDeleteProgram(program);
+  glDeleteShader(vertex_shader);
+  glDeleteShader(fragment_shader);
+  glDeleteBuffers(1, &vertex_buffer);
+  glDeleteBuffers(1, &element_buffer);
 
+  glDeleteVertexArrays(1, &vao);
   glfwDestroyWindow(window);
   glfwTerminate();
   return EXIT_SUCCESS;
