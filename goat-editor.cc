@@ -1,3 +1,4 @@
+#include <codecvt>
 #include <iostream>
 #include <string>
 
@@ -53,9 +54,9 @@ static void delete_char(GLFWwindow* window, ssize_t offset, size_t num) {
 
 static void add_char(GLFWwindow* window, unsigned int codepoint) {
   void *data = glfwGetWindowUserPointer(window);
-  auto text = *static_cast<std::shared_ptr<std::string> *>(data);
+  auto text = *static_cast<std::shared_ptr<std::wstring> *>(data);
   text->push_back(codepoint);
-  std::cout << *text << std::endl;
+  std::wcout << *text << std::endl;
 }
 
 static void control_key(GLFWwindow* window, int key,
@@ -79,7 +80,7 @@ static void log_error(const int error, const char* description) {
 }
 
 int main() {
-  auto text = std::make_shared<std::string>();
+  auto text = std::make_shared<std::wstring>();
   GLFWwindow* window;
   glfwSetErrorCallback(log_error);
   if(!glfwInit()) { exit(EXIT_FAILURE); }
@@ -145,10 +146,8 @@ int main() {
   GLuint tex = glGetUniformLocation(program, "text");
   glGenTextures(1, &tex);
   glBindTexture(GL_TEXTURE_2D, tex);
-//  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-//  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -165,18 +164,26 @@ int main() {
     );
 
     cairo_t *ctx = cairo_create(surface);
-    cairo_set_source_rgba(ctx, 0.0, 0.0, 0.0, 1.0);
+    float gray = 199.0 / 255.0;
+    cairo_set_source_rgba(ctx, 0.0, 14.0 / 255.0, 47.0 / 255.0, 1.0f);
+    cairo_paint(ctx);
+    cairo_set_source_rgba(ctx, gray, gray, gray, 1.0);
     PangoLayout *layout = pango_cairo_create_layout(ctx);
-    pango_layout_set_text(layout, (char *)text->data(), text->size());
+    PangoFontDescription *desc = pango_font_description_from_string("Monaco 11");
+    pango_layout_set_font_description(layout, desc);
+    pango_font_description_free(desc);
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
+    auto utf8 = conv.to_bytes(*text);
+    pango_layout_set_text(layout, utf8.c_str(), utf8.size());
     pango_cairo_update_layout (ctx, layout);
     pango_cairo_show_layout(ctx, layout);
+    cairo_surface_write_to_png(surface, "out.png");
     g_object_unref(layout);
-    cairo_surface_flush(surface);
     cairo_surface_destroy(surface);
     cairo_destroy(ctx);
 
     glViewport(0, 0, w, h);
-    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    glClearColor(0.0, 0.0, 0.0, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     glTexImage2D(GL_TEXTURE_2D,
