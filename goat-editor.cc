@@ -18,20 +18,21 @@ void main(){                         \
 }";
 
 static const GLchar *fragment =
-"                               \
-#version 150 core               \
-uniform sampler2D text;         \
-in vec2 coord;                  \
-out vec4 color;                 \
-void main() {                   \
-  color = texture(text, coord); \
+"                                                         \
+#version 150 core                                         \
+uniform sampler2D text;                                   \
+in vec2 coord;                                            \
+out vec4 color;                                           \
+void main() {                                             \
+  vec2 coord2 = (vec2(coord.x, 2. - coord.y) + 1.) / 2.;  \
+  color = texture(text, coord2);                          \
 }";
 
 static const GLfloat vertices[] = {
-  -0.5f,  0.5f,
-   0.5f,  0.5f,
-   0.5f, -0.5f,
-  -0.5f, -0.5f
+  -1.0f,  1.0f,
+   1.0f,  1.0f,
+   1.0f, -1.0f,
+  -1.0f, -1.0f
 };
 
 static const GLuint triangles[] = {
@@ -52,9 +53,9 @@ static void delete_char(GLFWwindow* window, ssize_t offset, size_t num) {
 
 static void add_char(GLFWwindow* window, unsigned int codepoint) {
   void *data = glfwGetWindowUserPointer(window);
-  auto text = *static_cast<std::shared_ptr<std::wstring> *>(data);
+  auto text = *static_cast<std::shared_ptr<std::string> *>(data);
   text->push_back(codepoint);
-  std::wcout << *text << std::endl;
+  std::cout << *text << std::endl;
 }
 
 static void control_key(GLFWwindow* window, int key,
@@ -78,7 +79,7 @@ static void log_error(const int error, const char* description) {
 }
 
 int main() {
-  auto text = std::make_shared<std::wstring>();
+  auto text = std::make_shared<std::string>();
   GLFWwindow* window;
   glfwSetErrorCallback(log_error);
   if(!glfwInit()) { exit(EXIT_FAILURE); }
@@ -144,10 +145,11 @@ int main() {
   GLuint tex = glGetUniformLocation(program, "text");
   glGenTextures(1, &tex);
   glBindTexture(GL_TEXTURE_2D, tex);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+//  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+//  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
