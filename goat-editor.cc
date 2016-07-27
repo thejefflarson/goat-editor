@@ -80,6 +80,50 @@ static void log_error(const int error, const char* description) {
   std::cerr << "Error:" << description << std::endl;
 }
 
+static void is_error() {
+  return glGetError() != GL_NO_ERROR;
+}
+
+class Vao {
+public:
+  Vao(std::vector<GLfloat> vertices,
+      std::vector<GLuint> triangles) :
+    vertices_(vertices),
+    triangles_(triangles) {}
+
+  bool Init() {
+    glGenVertexArrays(1, &vao_);
+    glGenBuffers(1, &vbo_);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_);
+    glGenBuffers(1, &ebo_);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
+    Bind()
+    glBufferData(GL_ARRAY_BUFFER, vertices_.length(), vertices_.data(),
+                 GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, triangles._length(),
+                 triangles_.data(), GL_STATIC_DRAW);
+    Unbind();
+    return is_error();
+  }
+
+  bool Bind() {
+    glBindVertexArray(vao_);
+    return is_error();
+  }
+
+  bool Unbind() {
+    glBindVertexArray(0);
+    return is_error();
+  }
+
+private:
+  std::vector<GLfloat> vertices_;
+  std::vector<GLuint> triangles_;
+  GLuint vao_ = 0;
+  GLuint vbo_ = 0;
+  GLuint ebo_ = 0;
+}
+
 int main() {
   auto text = std::make_shared<std::wstring>();
   GLFWwindow* window;
