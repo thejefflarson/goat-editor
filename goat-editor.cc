@@ -61,6 +61,7 @@ static void add_char(GLFWwindow* window, unsigned int codepoint) {
 
 static void control_key(GLFWwindow* window, int key,
                         int scancode, int action, int mods) {
+  if(action != GLFW_PRESS) return;
   switch(key) {
   case GLFW_KEY_BACKSPACE:
     delete_char(window, -1, 1);
@@ -157,19 +158,19 @@ int main() {
     // TODO: we should only alloc this on resize
     glfwGetFramebufferSize(window, &w, &h);
 
-    uint8_t *data = (uint8_t *)calloc(w * h * 4, sizeof(uint8_t));
+    uint8_t *data = (uint8_t *)malloc(w * h * 4 * sizeof(uint8_t));
 
     cairo_surface_t *surface = cairo_image_surface_create_for_data(
       data, CAIRO_FORMAT_ARGB32, w, h, w * 4
     );
 
     cairo_t *ctx = cairo_create(surface);
-    float gray = 199.0 / 255.0;
+    float gray = 255.0 / 255.0;
     cairo_set_source_rgba(ctx, 0.0, 14.0 / 255.0, 47.0 / 255.0, 1.0f);
     cairo_paint(ctx);
     cairo_set_source_rgba(ctx, gray, gray, gray, 1.0);
     PangoLayout *layout = pango_cairo_create_layout(ctx);
-    PangoFontDescription *desc = pango_font_description_from_string("Monaco 11");
+    PangoFontDescription *desc = pango_font_description_from_string("Monaco 10");
     pango_layout_set_font_description(layout, desc);
     pango_font_description_free(desc);
     std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
@@ -177,13 +178,13 @@ int main() {
     pango_layout_set_text(layout, utf8.c_str(), utf8.size());
     pango_cairo_update_layout (ctx, layout);
     pango_cairo_show_layout(ctx, layout);
-    cairo_surface_write_to_png(surface, "out.png");
+
     g_object_unref(layout);
     cairo_surface_destroy(surface);
     cairo_destroy(ctx);
 
     glViewport(0, 0, w, h);
-    glClearColor(0.0, 0.0, 0.0, 1.0f);
+    glClearColor(0.0, 14.0 / 255.0, 47.0 / 255.0, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     glTexImage2D(GL_TEXTURE_2D,
