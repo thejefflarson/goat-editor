@@ -61,7 +61,7 @@ static void add_char(GLFWwindow* window, unsigned int codepoint) {
 
 static void control_key(GLFWwindow* window, int key,
                         int scancode, int action, int mods) {
-  if(action != GLFW_PRESS) return;
+  if(action == GLFW_RELEASE) return;
   switch(key) {
   case GLFW_KEY_BACKSPACE:
     delete_char(window, -1, 1);
