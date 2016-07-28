@@ -91,27 +91,35 @@ public:
     vertices_(vertices),
     triangles_(triangles) {}
 
+  ~Vao() {
+    if(vbo_) glDeleteBuffers(1, &vbo_);
+    if(ebo_) glDeleteBuffers(1, &ebo_);
+    if(vao_) glDeleteVertexArrays(1, &vao_);
+  }
+
   bool Init() {
     glGenVertexArrays(1, &vao_);
+    bind();
     glGenBuffers(1, &vbo_);
     glBindBuffer(GL_ARRAY_BUFFER, vbo_);
     glGenBuffers(1, &ebo_);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
-    Bind()
     glBufferData(GL_ARRAY_BUFFER, vertices_.length(), vertices_.data(),
                  GL_STATIC_DRAW);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, triangles._length(),
                  triangles_.data(), GL_STATIC_DRAW);
-    Unbind();
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    unbind();
     return is_error();
   }
 
-  bool Bind() {
+  bool bind() {
     glBindVertexArray(vao_);
     return is_error();
   }
 
-  bool Unbind() {
+  bool unbind() {
     glBindVertexArray(0);
     return is_error();
   }
@@ -247,7 +255,6 @@ int main() {
   glDeleteShader(fragment_shader);
   glDeleteBuffers(1, &vertex_buffer);
   glDeleteBuffers(1, &element_buffer);
-
   glDeleteVertexArrays(1, &vao);
   glfwDestroyWindow(window);
   glfwTerminate();
