@@ -84,7 +84,14 @@ static void is_error() {
   return glGetError() != GL_NO_ERROR;
 }
 
-class Vao {
+class GL {
+public:
+  virtual bool Init();
+  virtual bool bind();
+  virtual bool unbind();
+}
+
+class Vao : public GL {
 public:
   Vao(std::vector<GLfloat> vertices,
       std::vector<GLuint> triangles) :
@@ -130,6 +137,53 @@ private:
   GLuint vao_ = 0;
   GLuint vbo_ = 0;
   GLuint ebo_ = 0;
+}
+
+class Shader : public GL {
+public:
+  Shader(std::string fragment, std::string vertex) :
+    fragment_(fragment),
+    vertex_(vertex) {}
+
+  bool Init(){
+    vertex_shader_ = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertex_shader_, 1, vertex.c_str(), vertex.size());
+    glCompileShader(vertex_shader_);
+
+    fragment_shader_ = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragment_shader, 1, fragment.c_str(), fragment.size());
+    glCompileShader(fragment_shader);
+
+    program_ = glCreateProgram();
+    glAttachShader(program, vertex_shader_);
+    glAttachShader(program, fragment_shader_);
+    glBindFragDataLocation(program, 0, "color");
+    glLinkProgram(program);
+
+    return is_error();
+  }
+
+  bool bind() {
+    glUseProgram(program_);
+    return is_error();
+  }
+
+  bool unbind() {
+    glUseProgram(0);
+    return is_error();
+  }
+
+  ~Shader() {
+    glDeleteProgram(program_);
+    glDeleteShader(vertex_shader_);
+    glDeleteShader(fragment_shader_);
+  }
+private:
+  std::string fragment_;
+  std::string vertex_;
+  GLuint program_ = 0;
+  GLuint vertex_shader_ = 0;
+  GLuint fragment_shader_ = 0;
 }
 
 int main() {
