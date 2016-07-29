@@ -1,6 +1,7 @@
 #include <codecvt>
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include <stddef.h>
 
@@ -80,7 +81,7 @@ static void log_error(const int error, const char* description) {
   std::cerr << "Error:" << description << std::endl;
 }
 
-static void is_error() {
+static bool is_error() {
   return glGetError() != GL_NO_ERROR;
 }
 
@@ -89,7 +90,7 @@ public:
   virtual bool Init();
   virtual bool bind();
   virtual bool unbind();
-}
+};
 
 class Vao : public GL {
 public:
@@ -111,9 +112,9 @@ public:
     glBindBuffer(GL_ARRAY_BUFFER, vbo_);
     glGenBuffers(1, &ebo_);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
-    glBufferData(GL_ARRAY_BUFFER, vertices_.length(), vertices_.data(),
-                 GL_STATIC_DRAW);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, triangles._length(),
+    glBufferData(GL_ARRAY_BUFFER, vertices_.size(),
+                 vertices_.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, triangles_.size(),
                  triangles_.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -137,7 +138,7 @@ private:
   GLuint vao_ = 0;
   GLuint vbo_ = 0;
   GLuint ebo_ = 0;
-}
+};
 
 class Shader : public GL {
 public:
@@ -147,18 +148,22 @@ public:
 
   bool Init(){
     vertex_shader_ = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertex_shader_, 1, vertex.c_str(), vertex.size());
+    const char *v = vertex_.c_str();
+    const int len = vertex_.length();
+    glShaderSource(vertex_shader_, 1, &v, &len);
     glCompileShader(vertex_shader_);
 
     fragment_shader_ = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragment_shader, 1, fragment.c_str(), fragment.size());
-    glCompileShader(fragment_shader);
+    const char *f = fragment_.c_str();
+    const int flen = fragment_.length();
+    glShaderSource(fragment_shader_, 1, &f, &flen);
+    glCompileShader(fragment_shader_);
 
     program_ = glCreateProgram();
-    glAttachShader(program, vertex_shader_);
-    glAttachShader(program, fragment_shader_);
-    glBindFragDataLocation(program, 0, "color");
-    glLinkProgram(program);
+    glAttachShader(program_, vertex_shader_);
+    glAttachShader(program_, fragment_shader_);
+    glBindFragDataLocation(program_, 0, "color");
+    glLinkProgram(program_);
 
     return is_error();
   }
@@ -184,7 +189,7 @@ private:
   GLuint program_ = 0;
   GLuint vertex_shader_ = 0;
   GLuint fragment_shader_ = 0;
-}
+};
 
 int main() {
   auto text = std::make_shared<std::wstring>();
