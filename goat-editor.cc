@@ -1,6 +1,7 @@
 #include <codecvt>
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include <stddef.h>
 
@@ -79,6 +80,116 @@ static void control_key(GLFWwindow* window, int key,
 static void log_error(const int error, const char* description) {
   std::cerr << "Error:" << description << std::endl;
 }
+
+static bool is_error() {
+  return glGetError() != GL_NO_ERROR;
+}
+
+class GL {
+public:
+  virtual bool Init();
+  virtual bool bind();
+  virtual bool unbind();
+};
+
+class Vao : public GL {
+public:
+  Vao(std::vector<GLfloat> vertices,
+      std::vector<GLuint> triangles) :
+    vertices_(vertices),
+    triangles_(triangles) {}
+
+  ~Vao() {
+    if(vbo_) glDeleteBuffers(1, &vbo_);
+    if(ebo_) glDeleteBuffers(1, &ebo_);
+    if(vao_) glDeleteVertexArrays(1, &vao_);
+  }
+
+  bool Init() {
+    glGenVertexArrays(1, &vao_);
+    bind();
+    glGenBuffers(1, &vbo_);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_);
+    glGenBuffers(1, &ebo_);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
+    glBufferData(GL_ARRAY_BUFFER, vertices_.size(),
+                 vertices_.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, triangles_.size(),
+                 triangles_.data(), GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    unbind();
+    return is_error();
+  }
+
+  bool bind() {
+    glBindVertexArray(vao_);
+    return is_error();
+  }
+
+  bool unbind() {
+    glBindVertexArray(0);
+    return is_error();
+  }
+
+private:
+  std::vector<GLfloat> vertices_;
+  std::vector<GLuint> triangles_;
+  GLuint vao_ = 0;
+  GLuint vbo_ = 0;
+  GLuint ebo_ = 0;
+};
+
+class Shader : public GL {
+public:
+  Shader(std::string fragment, std::string vertex) :
+    fragment_(fragment),
+    vertex_(vertex) {}
+
+  bool Init(){
+    vertex_shader_ = glCreateShader(GL_VERTEX_SHADER);
+    const char *v = vertex_.c_str();
+    const int len = vertex_.length();
+    glShaderSource(vertex_shader_, 1, &v, &len);
+    glCompileShader(vertex_shader_);
+
+    fragment_shader_ = glCreateShader(GL_FRAGMENT_SHADER);
+    const char *f = fragment_.c_str();
+    const int flen = fragment_.length();
+    glShaderSource(fragment_shader_, 1, &f, &flen);
+    glCompileShader(fragment_shader_);
+
+    program_ = glCreateProgram();
+    glAttachShader(program_, vertex_shader_);
+    glAttachShader(program_, fragment_shader_);
+    glBindFragDataLocation(program_, 0, "color");
+    glLinkProgram(program_);
+
+    return is_error();
+  }
+
+  bool bind() {
+    glUseProgram(program_);
+    return is_error();
+  }
+
+  bool unbind() {
+    glUseProgram(0);
+    return is_error();
+  }
+
+  ~Shader() {
+    glDeleteProgram(program_);
+    glDeleteShader(vertex_shader_);
+    glDeleteShader(fragment_shader_);
+  }
+private:
+  std::string fragment_;
+  std::string vertex_;
+  GLuint program_ = 0;
+  GLuint vertex_shader_ = 0;
+  GLuint fragment_shader_ = 0;
+};
 
 int main() {
   auto text = std::make_shared<std::wstring>();
@@ -165,6 +276,8 @@ int main() {
     );
 
     cairo_t *ctx = cairo_create(surface);
+    cairo_font_options_t *fo = cairo_font_options_create();
+    cairo_set_antialias(ctx, CAIRO_ANTIALIAS_BEST);
     float gray = 255.0 / 255.0;
     cairo_set_source_rgba(ctx, 0.0, 14.0 / 255.0, 47.0 / 255.0, 1.0f);
     cairo_paint(ctx);
@@ -203,7 +316,6 @@ int main() {
   glDeleteShader(fragment_shader);
   glDeleteBuffers(1, &vertex_buffer);
   glDeleteBuffers(1, &element_buffer);
-
   glDeleteVertexArrays(1, &vao);
   glfwDestroyWindow(window);
   glfwTerminate();
