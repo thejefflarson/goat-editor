@@ -10,27 +10,8 @@
 #include <GLFW/glfw3.h>
 #include <pango/pangocairo.h>
 
-static const GLchar *vertex =
-"                                    \
-#version 150 core                    \
-in vec2 pos;                         \
-out vec2 coord;                      \
-void main(){                         \
-  coord = pos;                       \
-  gl_Position = vec4(pos, 0.0, 1.0); \
-}";
-
-static const GLchar *fragment =
-"                                                         \
-#version 150 core                                         \
-uniform sampler2D text;                                   \
-in vec2 coord;                                            \
-out vec4 color;                                           \
-void main() {                                             \
-  vec2 coord2 = (vec2(coord.x, 2. - coord.y) + 1.) / 2.;  \
-  color = texture(text, coord2);                          \
-}";
-
+
+#pragma mark - text utils
 static void delete_char(GLFWwindow* window, ssize_t offset, size_t num) {
   void *data = glfwGetWindowUserPointer(window);
   auto text = *static_cast<std::shared_ptr<std::wstring> *>(data);
@@ -74,6 +55,8 @@ static bool is_error() {
   return glGetError() != GL_NO_ERROR;
 }
 
+
+#pragma mark - GL utils
 class GL {
 public:
   virtual bool Init() = 0;
@@ -138,13 +121,13 @@ public:
     vertex_shader_ = glCreateShader(GL_VERTEX_SHADER);
     const char *v = vertex_.c_str();
     const int len = vertex_.length();
-    glShaderSource(vertex_shader_, 1, &v, NULL);
+    glShaderSource(vertex_shader_, 1, &v, &len);
     glCompileShader(vertex_shader_);
 
     fragment_shader_ = glCreateShader(GL_FRAGMENT_SHADER);
     const char *f = fragment_.c_str();
     const int flen = fragment_.length();
-    glShaderSource(fragment_shader_, 1, &f, NULL);
+    glShaderSource(fragment_shader_, 1, &f, &flen);
     glCompileShader(fragment_shader_);
 
     program_ = glCreateProgram();
@@ -184,7 +167,8 @@ private:
   GLuint vertex_shader_;
   GLuint fragment_shader_;
 };
-
+
+#pragma mark - main
 int main() {
   auto text = std::make_shared<std::wstring>();
   GLFWwindow* window;
