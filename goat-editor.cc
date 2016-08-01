@@ -207,19 +207,15 @@ int main() {
     return EXIT_FAILURE;
   }
 
-  std::vector<GLfloat> vertices = {
+  Vao vao({
    -1.0f,  1.0f,
     1.0f,  1.0f,
     1.0f, -1.0f,
    -1.0f, -1.0f
-  };
-
-  std::vector<GLuint> triangles = {
+  }, {
     0, 1, 2,
     2, 3, 0
-  };
-
-  Vao vao(vertices, triangles);
+  });
 
   if(vao.Init() || vao.bind()) {
     log_error(0, "Couldn't load vao.");
