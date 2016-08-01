@@ -276,7 +276,6 @@ int main() {
     );
 
     cairo_t *ctx = cairo_create(surface);
-    cairo_font_options_t *fo = cairo_font_options_create();
     cairo_set_antialias(ctx, CAIRO_ANTIALIAS_BEST);
     float gray = 255.0 / 255.0;
     cairo_set_source_rgba(ctx, 0.0, 14.0 / 255.0, 47.0 / 255.0, 1.0f);
