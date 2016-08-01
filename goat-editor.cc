@@ -30,18 +30,6 @@ void main() {                                             \
   color = texture(text, coord2);                          \
 }";
 
-static const GLfloat vertices[] = {
-  -1.0f,  1.0f,
-   1.0f,  1.0f,
-   1.0f, -1.0f,
-  -1.0f, -1.0f
-};
-
-static const GLuint triangles[] = {
-  0, 1, 2,
-  2, 3, 0
-};
-
 static void delete_char(GLFWwindow* window, ssize_t offset, size_t num) {
   void *data = glfwGetWindowUserPointer(window);
   auto text = *static_cast<std::shared_ptr<std::wstring> *>(data);
@@ -78,7 +66,7 @@ static void control_key(GLFWwindow* window, int key,
 }
 
 static void log_error(const int error, const char* description) {
-  std::cerr << "Error:" << description << std::endl;
+  std::cerr << "Error: " << description << std::endl;
 }
 
 static bool is_error() {
@@ -87,9 +75,9 @@ static bool is_error() {
 
 class GL {
 public:
-  virtual bool Init();
-  virtual bool bind();
-  virtual bool unbind();
+  virtual bool Init() = 0;
+  virtual bool bind() = 0;
+  virtual bool unbind() = 0;
 };
 
 class Vao : public GL {
@@ -107,17 +95,16 @@ public:
 
   bool Init() {
     glGenVertexArrays(1, &vao_);
+
     bind();
     glGenBuffers(1, &vbo_);
     glBindBuffer(GL_ARRAY_BUFFER, vbo_);
+    glBufferData(GL_ARRAY_BUFFER, vertices_.size() * sizeof(GLfloat),
+                 vertices_.data(), GL_STATIC_DRAW);
     glGenBuffers(1, &ebo_);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
-    glBufferData(GL_ARRAY_BUFFER, vertices_.size(),
-                 vertices_.data(), GL_STATIC_DRAW);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, triangles_.size(),
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, triangles_.size() * sizeof(GLuint),
                  triangles_.data(), GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     unbind();
     return is_error();
   }
@@ -135,9 +122,9 @@ public:
 private:
   std::vector<GLfloat> vertices_;
   std::vector<GLuint> triangles_;
-  GLuint vao_ = 0;
-  GLuint vbo_ = 0;
-  GLuint ebo_ = 0;
+  GLuint vao_;
+  GLuint vbo_;
+  GLuint ebo_;
 };
 
 class Shader : public GL {
@@ -186,16 +173,16 @@ public:
 private:
   std::string fragment_;
   std::string vertex_;
-  GLuint program_ = 0;
-  GLuint vertex_shader_ = 0;
-  GLuint fragment_shader_ = 0;
+  GLuint program_;
+  GLuint vertex_shader_;
+  GLuint fragment_shader_;
 };
 
 int main() {
   auto text = std::make_shared<std::wstring>();
   GLFWwindow* window;
   glfwSetErrorCallback(log_error);
-  if(!glfwInit()) { exit(EXIT_FAILURE); }
+  if(!glfwInit()) { return EXIT_FAILURE; }
 
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
@@ -220,21 +207,26 @@ int main() {
     return EXIT_FAILURE;
   }
 
-  // TODO: add error checks for this junk
-  GLuint vao;
-  glGenVertexArrays(1, &vao);
-  glBindVertexArray(vao);
+  std::vector<GLfloat> vertices = {
+   -1.0f,  1.0f,
+    1.0f,  1.0f,
+    1.0f, -1.0f,
+   -1.0f, -1.0f
+  };
 
-  GLuint vertex_buffer;
-  glGenBuffers(1, &vertex_buffer);
-  glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  std::vector<GLuint> triangles = {
+    0, 1, 2,
+    2, 3, 0
+  };
 
-  GLuint element_buffer;
-  glGenBuffers(1, &element_buffer);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, element_buffer);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(triangles), triangles,
-               GL_STATIC_DRAW);
+  Vao vao(vertices, triangles);
+
+  if(vao.Init() || vao.bind()) {
+    log_error(0, "Couldn't load vao.");
+    glfwDestroyWindow(window);
+    glfwTerminate();
+    return EXIT_FAILURE;
+  }
 
   GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
   glShaderSource(vertex_shader, 1, &vertex, NULL);
@@ -309,13 +301,13 @@ int main() {
     glfwPollEvents();
     free(data);
   }
-
+  vao.unbind();
   glDeleteProgram(program);
   glDeleteShader(vertex_shader);
   glDeleteShader(fragment_shader);
-  glDeleteBuffers(1, &vertex_buffer);
-  glDeleteBuffers(1, &element_buffer);
-  glDeleteVertexArrays(1, &vao);
+
+
+
   glfwDestroyWindow(window);
   glfwTerminate();
   return EXIT_SUCCESS;
