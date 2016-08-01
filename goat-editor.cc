@@ -1,3 +1,4 @@
+
 #include <codecvt>
 #include <iostream>
 #include <string>
@@ -129,21 +130,21 @@ private:
 
 class Shader : public GL {
 public:
-  Shader(std::string fragment, std::string vertex) :
-    fragment_(fragment),
-    vertex_(vertex) {}
+  Shader(std::string vertex, std::string fragment) :
+    vertex_(vertex),
+    fragment_(fragment) {}
 
   bool Init(){
     vertex_shader_ = glCreateShader(GL_VERTEX_SHADER);
     const char *v = vertex_.c_str();
     const int len = vertex_.length();
-    glShaderSource(vertex_shader_, 1, &v, &len);
+    glShaderSource(vertex_shader_, 1, &v, NULL);
     glCompileShader(vertex_shader_);
 
     fragment_shader_ = glCreateShader(GL_FRAGMENT_SHADER);
     const char *f = fragment_.c_str();
     const int flen = fragment_.length();
-    glShaderSource(fragment_shader_, 1, &f, &flen);
+    glShaderSource(fragment_shader_, 1, &f, NULL);
     glCompileShader(fragment_shader_);
 
     program_ = glCreateProgram();
@@ -153,6 +154,10 @@ public:
     glLinkProgram(program_);
 
     return is_error();
+  }
+
+  GLuint get() {
+    return program_;
   }
 
   bool bind() {
@@ -170,9 +175,11 @@ public:
     glDeleteShader(vertex_shader_);
     glDeleteShader(fragment_shader_);
   }
+
 private:
-  std::string fragment_;
   std::string vertex_;
+  std::string fragment_;
+
   GLuint program_;
   GLuint vertex_shader_;
   GLuint fragment_shader_;
@@ -224,26 +231,37 @@ int main() {
     return EXIT_FAILURE;
   }
 
-  GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-  glShaderSource(vertex_shader, 1, &vertex, NULL);
-  glCompileShader(vertex_shader);
+  Shader shader(
+"                                    \
+#version 150 core                    \
+in vec2 pos;                         \
+out vec2 coord;                      \
+void main(){                         \
+  coord = pos;                       \
+  gl_Position = vec4(pos, 0.0, 1.0); \
+}",
+"                                                         \
+#version 150 core                                         \
+uniform sampler2D text;                                   \
+in vec2 coord;                                            \
+out vec4 color;                                           \
+void main() {                                             \
+  vec2 coord2 = (vec2(coord.x, 2. - coord.y) + 1.) / 2.;  \
+  color = texture(text, coord2);                          \
+}");
 
-  GLuint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-  glShaderSource(fragment_shader, 1, &fragment, NULL);
-  glCompileShader(fragment_shader);
+  if(shader.Init() || shader.bind()) {
+    log_error(0, "Couldn't load shader.");
+    glfwDestroyWindow(window);
+    glfwTerminate();
+    return EXIT_FAILURE;
+  }
 
-  GLuint program = glCreateProgram();
-  glAttachShader(program, vertex_shader);
-  glAttachShader(program, fragment_shader);
-  glBindFragDataLocation(program, 0, "color");
-  glLinkProgram(program);
-  glUseProgram(program);
-
-  GLint pos = glGetAttribLocation(program, "pos");
+  GLint pos = glGetAttribLocation(shader.get(), "pos");
   glEnableVertexAttribArray(pos);
   glVertexAttribPointer(pos, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
-  GLuint tex = glGetUniformLocation(program, "text");
+  GLuint tex = glGetUniformLocation(shader.get(), "text");
   glGenTextures(1, &tex);
   glBindTexture(GL_TEXTURE_2D, tex);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -298,11 +316,7 @@ int main() {
     free(data);
   }
   vao.unbind();
-  glDeleteProgram(program);
-  glDeleteShader(vertex_shader);
-  glDeleteShader(fragment_shader);
-
-
+  shader.unbind();
 
   glfwDestroyWindow(window);
   glfwTerminate();
