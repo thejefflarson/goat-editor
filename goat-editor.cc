@@ -1,4 +1,3 @@
-
 #include <codecvt>
 #include <iostream>
 #include <string>
@@ -12,6 +11,7 @@
 
 
 #pragma mark - text utils
+
 static void delete_char(GLFWwindow* window, ssize_t offset, size_t num) {
   void *data = glfwGetWindowUserPointer(window);
   auto text = *static_cast<std::shared_ptr<std::wstring> *>(data);
@@ -57,6 +57,7 @@ static bool is_error() {
 
 
 #pragma mark - GL utils
+
 class GL {
 public:
   virtual bool Init() = 0;
@@ -167,8 +168,10 @@ private:
   GLuint vertex_shader_;
   GLuint fragment_shader_;
 };
+
 
 #pragma mark - main
+
 int main() {
   auto text = std::make_shared<std::wstring>();
   GLFWwindow* window;
