@@ -1,9 +1,9 @@
 CC = clang
 CXX = clang++
 INCLUDES = -I./lib/include/ $(shell pkg-config --cflags glfw3 pangocairo)
-CFLAGS = $(INCLUDES) -std=c11
-CXXFLAGS = $(INCLUDES) -std=c++14
-LDFLAGS = $(shell pkg-config --libs --static glfw3 pangocairo)
+CFLAGS = $(INCLUDES) -std=c11 -g -Wall
+CXXFLAGS = $(INCLUDES) -std=c++14 -g -Wall
+LDFLAGS = $(shell pkg-config --libs glfw3 pangocairo)
 GLAD = lib/src/glad.c lib/include/glad/glad.h lib/include/KHR/khrplatform.h
 
 all: build/goat-editor
@@ -12,7 +12,7 @@ lib/stamp:
 	mkdir -p lib
 	@rm -f data.tmp
 	@touch data.tmp
-	glad --generator=c --out-path=lib
+	glad --generator=c-debug --out-path=lib
 	@mv data.tmp $@
 
 $(GLAD): lib/stamp
