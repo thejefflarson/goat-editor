@@ -3,7 +3,7 @@ CXX = clang++
 INCLUDES = -I./lib/include/ $(shell pkg-config --cflags glfw3 pangocairo)
 CFLAGS = $(INCLUDES) -std=c11 -g -Wall
 CXXFLAGS = $(INCLUDES) -std=c++14 -g -Wall
-LDFLAGS = $(shell pkg-config --libs glfw3 pangocairo)
+LDFLAGS = $(shell pkg-config --libs glfw3 pangocairo) -ldl
 GLAD = lib/src/glad.c lib/include/glad/glad.h lib/include/KHR/khrplatform.h
 
 all: build/goat-editor
@@ -31,7 +31,7 @@ build/goat-editor.o: goat-editor.cc $(GLAD)
 
 build/goat-editor: build/goat-editor.o build/glad.o
 	mkdir -p build
-	$(CXX) $(LDFLAGS) $^ -o $@
+	$(CXX) $^ -o $@ $(LDFLAGS)
 
 clean:
 	rm -rf build lib
