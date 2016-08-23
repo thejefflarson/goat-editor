@@ -148,6 +148,7 @@ public:
 
   bool bind() {
     glUseProgram(program_);
+
     return is_error();
   }
 
@@ -221,23 +222,21 @@ int main() {
   }
 
   Shader shader(
-"                                    \
-#version 150 core                    \
-in vec2 pos;                         \
-out vec2 coord;                      \
-void main(){                         \
-  coord = pos;                       \
-  gl_Position = vec4(pos, 0.0, 1.0); \
-}",
-"                                                         \
-#version 150 core                                         \
-uniform sampler2D text;                                   \
-in vec2 coord;                                            \
-out vec4 color;                                           \
-void main() {                                             \
-  vec2 coord2 = (vec2(coord.x, 2. - coord.y) + 1.) / 2.;  \
-  color = texture(text, coord2);                          \
-}");
+"#version 150 core\n"
+"in vec2 pos;\n"
+"out vec2 coord;\n"
+"void main() {\n"
+"  coord = pos;\n"
+"  gl_Position = vec4(pos, 0.0, 1.0);\n"
+"}",
+"#version 150 core\n"
+"uniform sampler2D text;\n"
+"in vec2 coord;\n"
+"out vec4 color;\n"
+"void main() {\n"
+"  vec2 coord2 = (vec2(coord.x, 2. - coord.y) + 1.) / 2.;\n"
+"  color = texture(text, coord2);\n"
+"}");
 
   if(shader.Init() || shader.bind()) {
     log_error(0, "Couldn't load shader.");
