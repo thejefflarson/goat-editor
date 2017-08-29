@@ -276,13 +276,14 @@ int main() {
     cairo_paint(ctx);
     cairo_set_source_rgba(ctx, gray, gray, gray, 1.0);
     PangoLayout *layout = pango_cairo_create_layout(ctx);
-    PangoFontDescription *desc = pango_font_description_from_string("Monaco 10");
+    PangoFontDescription *desc = pango_font_description_from_string("Monaco");
+    pango_font_description_set_size(desc, 30 * PANGO_SCALE);
     pango_layout_set_font_description(layout, desc);
     pango_font_description_free(desc);
     std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
     auto utf8 = conv.to_bytes(*text);
     pango_layout_set_text(layout, utf8.c_str(), utf8.size());
-    pango_cairo_update_layout (ctx, layout);
+    pango_cairo_update_layout(ctx, layout);
     pango_cairo_show_layout(ctx, layout);
 
     g_object_unref(layout);
